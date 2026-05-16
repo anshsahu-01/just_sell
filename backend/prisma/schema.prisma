@@ -77,7 +77,7 @@ model Conversation {
   seller   User      @relation("ConversationSeller", fields: [sellerId], references: [id], onDelete: Cascade)
   messages Message[]
 
-  @@unique([productId, buyerId])
+  @@unique([buyerId, sellerId, productId])
   @@index([buyerId])
   @@index([sellerId])
   @@index([lastMessageAt])

@@ -98,21 +98,49 @@ export async function createOrGetConversation(
     throw new AppError("You cannot chat with yourself", 403);
   }
 
-  const conversation = await prisma.conversation.upsert({
+  const sellerId = product.userId;
+
+  let conversation = await prisma.conversation.findFirst({
     where: {
-      productId_buyerId: {
-        productId: product.id,
-        buyerId: userId,
-      },
-    },
-    create: {
       productId: product.id,
       buyerId: userId,
-      sellerId: product.userId,
+      sellerId,
     },
-    update: {},
     include: conversationInclude,
   });
+
+  if (!conversation) {
+    try {
+      conversation = await prisma.conversation.create({
+        data: {
+          productId: product.id,
+          buyerId: userId,
+          sellerId,
+        },
+        include: conversationInclude,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        conversation = await prisma.conversation.findFirst({
+          where: {
+            productId: product.id,
+            buyerId: userId,
+            sellerId,
+          },
+          include: conversationInclude,
+        });
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!conversation) {
+    throw new AppError("Could not create conversation", 500);
+  }
 
   return formatConversation(conversation, userId);
 }

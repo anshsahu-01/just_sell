@@ -38,7 +38,7 @@ CREATE INDEX "Conversation_sellerId_idx" ON "Conversation"("sellerId");
 CREATE INDEX "Conversation_lastMessageAt_idx" ON "Conversation"("lastMessageAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Conversation_productId_buyerId_key" ON "Conversation"("productId", "buyerId");
+CREATE UNIQUE INDEX "Conversation_buyerId_sellerId_productId_key" ON "Conversation"("buyerId", "sellerId", "productId");
 
 -- CreateIndex
 CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
