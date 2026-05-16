@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/AppError";
 import { verifyToken, JwtPayload } from "../utils/jwt";
 
+export type { JwtPayload };
+
 declare global {
   namespace Express {
     interface Request {

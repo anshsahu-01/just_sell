@@ -13,6 +13,7 @@ const publicUserSelect = {
   profileImage: true,
   collegeName: true,
   isVerified: true,
+  role: true,
   createdAt: true,
 } as const;
 
@@ -74,7 +75,7 @@ export async function login(input: LoginInput) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  const token = signToken({ userId: user.id });
+  const token = signToken({ userId: user.id, role: user.role });
 
   const { password: _password, ...publicUser } = user;
 

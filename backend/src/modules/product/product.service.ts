@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../utils/AppError";
 import { getPaginationMeta, PaginationMeta } from "../../utils/pagination";
+import { buildProductOrderBy, buildProductWhere } from "./product.query";
 import { CreateProductInput, GetProductsQuery } from "./product.validation";
 
 const sellerSelect = {
@@ -66,17 +67,20 @@ export async function createProduct(userId: string, input: CreateProductInput) {
 }
 
 export async function getAllProducts(query: GetProductsQuery) {
-  const { page, limit } = query;
+  const { page, limit, sort } = query;
   const skip = (page - 1) * limit;
+  const where = buildProductWhere(query);
+  const orderBy = buildProductOrderBy(sort);
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
+      where,
       skip,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       include: productInclude,
     }),
-    prisma.product.count(),
+    prisma.product.count({ where }),
   ]);
 
   return {
