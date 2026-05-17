@@ -7,21 +7,24 @@ import {
   Text,
   View,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, router } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CartButton } from "@/components/CartButton";
 import { LoadingState } from "@/components/LoadingState";
 import { MyListingCard } from "@/components/MyListingCard";
+import { ProductCard } from "@/components/ProductCard";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/hooks/useAuth";
 import * as productService from "@/services/product.service";
 import { ApiError } from "@/services/api";
 import { Product } from "@/types";
+import { useFavoritesStore } from "@/store/favoritesStore";
 
 export default function ProfileScreen() {
   const { user, token, logout } = useAuth();
+  const favoriteProducts = useFavoritesStore((state) => state.products);
   const [active, setActive] = useState<Product[]>([]);
   const [sold, setSold] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +98,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <ScreenHeader title="Profile" rightAction={<CartButton count={Math.min(active.length, 3)} />} />
+      <ScreenHeader title="Profile" rightAction={<CartButton />} />
 
       <ScrollView
         className="flex-1"
@@ -143,7 +146,7 @@ export default function ProfileScreen() {
           {[
             { icon: "bag-handle-outline", title: "My listings", value: `${active.length} active` },
             { icon: "archive-outline", title: "Sold archive", value: `${sold.length} sold` },
-            { icon: "school-outline", title: "Campus", value: user?.collegeName ?? "Not added" },
+            { icon: "heart-outline", title: "Favourites", value: `${favoriteProducts.length} saved` },
           ].map((item, index) => (
             <View key={item.title}>
               <View className="flex-row items-center gap-3 px-4 py-4">
@@ -171,6 +174,7 @@ export default function ProfileScreen() {
                 <MyListingCard
                   key={product.id}
                   product={product}
+                  onEdit={() => router.push(`/product/edit/${product.id}`)}
                   showMarkSold
                   onMarkSold={() => handleMarkSold(product.id)}
                   onDelete={() => handleDelete(product.id)}
@@ -192,12 +196,37 @@ export default function ProfileScreen() {
                 <MyListingCard
                   key={product.id}
                   product={product}
+                  onEdit={() => router.push(`/product/edit/${product.id}`)}
                   showMarkSold={false}
                   onDelete={() => handleDelete(product.id)}
                 />
               ))
             )}
           </View>
+        </View>
+
+        <View className="mt-4">
+          <Text className="mb-3 text-[18px] font-semibold text-ink">Favourites</Text>
+          {favoriteProducts.length === 0 ? (
+            <View className="rounded-2xl border border-line bg-white p-4">
+              <Text className="text-[14px] text-muted">No favourites yet.</Text>
+            </View>
+          ) : (
+            <View className="flex-row flex-wrap justify-between">
+              {favoriteProducts.map((product, index) => (
+                <View
+                  key={product.id}
+                  style={{
+                    width: "48%",
+                    marginRight: index % 2 === 0 ? 12 : 0,
+                    marginBottom: 12,
+                  }}
+                >
+                  <ProductCard product={product} />
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         <Pressable

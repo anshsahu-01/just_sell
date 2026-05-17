@@ -49,7 +49,7 @@ export default function ChatsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <ScreenHeader title="Chats" rightAction={<CartButton count={Math.min(conversations.length, 3)} />} />
+      <ScreenHeader title="Chats" rightAction={<CartButton />} />
 
       <FlatList
         className="flex-1"

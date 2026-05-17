@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Product } from "@/types";
 import { formatPrice } from "@/utils/format";
 import { cn } from "@/utils/cn";
+import { useFavoritesStore } from "@/store/favoritesStore";
 
 type ProductCardProps = {
   product: Product;
@@ -13,6 +14,8 @@ type ProductCardProps = {
 export function ProductCard({ product }: ProductCardProps) {
   const imageUri = product.images?.[0];
   const isSold = product.status === "SOLD" || product.isSold;
+  const isFavorite = useFavoritesStore((state) => state.isFavorite(product.id));
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   return (
     <Pressable
@@ -37,9 +40,16 @@ export function ProductCard({ product }: ProductCardProps) {
           </View>
         )}
 
-        <View className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full border border-line bg-white">
-          <Ionicons name="heart-outline" size={15} color="#111111" />
-        </View>
+        <Pressable
+          onPress={() => void toggleFavorite(product)}
+          className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full border border-line bg-white"
+        >
+          <Ionicons
+            name={isFavorite ? "heart" : "heart-outline"}
+            size={15}
+            color={isFavorite ? "#FF4C3B" : "#111111"}
+          />
+        </Pressable>
 
         {isSold ? (
           <View className="absolute left-3 top-3 rounded-full bg-danger px-2.5 py-1">

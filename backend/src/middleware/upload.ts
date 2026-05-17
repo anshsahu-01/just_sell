@@ -63,3 +63,18 @@ export const processProductImages = asyncHandler(
     next();
   }
 );
+
+export const processOptionalProductImages = asyncHandler(
+  async (req: Request, _res: Response, next: NextFunction) => {
+    const files = req.files as Express.Multer.File[] | undefined;
+
+    if (!files?.length) {
+      req.uploadedImageUrls = [];
+      next();
+      return;
+    }
+
+    req.uploadedImageUrls = await uploadImages(files);
+    next();
+  }
+);

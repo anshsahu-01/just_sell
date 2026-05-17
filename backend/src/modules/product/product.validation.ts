@@ -8,6 +8,26 @@ export const createProductSchema = z.object({
   categoryId: z.string().uuid("Invalid category ID"),
 });
 
+const existingImagesSchema = z.preprocess((value) => {
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}, z.array(z.string().url("Invalid image URL")).default([]));
+
+export const updateProductSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(200),
+  description: z.string().trim().min(1, "Description is required").max(5000),
+  price: z.coerce.number().positive("Price must be greater than 0"),
+  condition: z.string().trim().min(1, "Condition is required").max(50),
+  categoryId: z.string().uuid("Invalid category ID"),
+  existingImages: existingImagesSchema.optional().default([]),
+});
+
 export const productIdParamSchema = z.object({
   id: z.string().uuid("Invalid product ID"),
 });
@@ -36,8 +56,12 @@ export const getProductsQuerySchema = z.object({
 });
 
 export type CreateProductBody = z.infer<typeof createProductSchema>;
+export type UpdateProductBody = z.infer<typeof updateProductSchema>;
 
 export type CreateProductInput = CreateProductBody & {
+  images: string[];
+};
+export type UpdateProductInput = Omit<UpdateProductBody, "existingImages"> & {
   images: string[];
 };
 export type GetProductsQuery = z.infer<typeof getProductsQuerySchema>;

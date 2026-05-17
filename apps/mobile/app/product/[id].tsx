@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -49,8 +49,27 @@ export default function ProductDetailScreen() {
     loadProduct();
   }, [loadProduct]);
 
-  const isOwner = user?.id === product?.userId;
+  const currentUserId = user?.id ?? null;
+  const sellerId = product?.userId ?? null;
+  const isOwner = currentUserId != null && sellerId != null && currentUserId === sellerId;
   const isSold = product?.status === "SOLD" || product?.isSold === true;
+
+  useEffect(() => {
+    if (!product) return;
+
+    console.log("[BuyNow Debug]", {
+      currentUserId,
+      sellerId,
+      productStatus: product.status,
+      isOwner,
+      isSold,
+    });
+  }, [currentUserId, isOwner, isSold, product, sellerId]);
+
+  const showActionBar = useMemo(
+    () => Boolean(product && token && !isOwner && !isSold),
+    [product, token, isOwner, isSold]
+  );
 
   const handleChat = async () => {
     if (!product || !token || isOwner) return;
@@ -66,6 +85,25 @@ export default function ProductDetailScreen() {
     } finally {
       setChatLoading(false);
     }
+  };
+
+  const handleBuyNow = () => {
+    if (!product || !showActionBar) return;
+
+    router.push({
+      pathname: "/checkout",
+      params: {
+        productId: product.id,
+        title: product.title,
+        price: String(product.price),
+        image: product.images?.[0] ?? "",
+        sellerId: product.userId,
+        items: "1",
+        subtotal: String(product.price),
+        shipping: "0",
+        total: String(product.price),
+      },
+    });
   };
 
   if (loading) return <LoadingState />;
@@ -84,7 +122,7 @@ export default function ProductDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <ScreenHeader title="Item" showBack rightAction={<CartButton count={1} />} />
-      <ScrollView className="flex-1">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: showActionBar ? 96 : 16 }}>
         <View className="relative">
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
             {product.images.map((uri) => (
@@ -134,14 +172,22 @@ export default function ProductDetailScreen() {
         </View>
       </ScrollView>
 
-      {!isOwner && token && !isSold ? (
+      {showActionBar ? (
         <View className="border-t border-line bg-white p-3">
-          <Button
-            title="Message seller"
-            onPress={handleChat}
-            loading={chatLoading}
-            className="rounded-2xl"
-          />
+          <View className="flex-row gap-3">
+            <Button
+              title="Message seller"
+              onPress={handleChat}
+              loading={chatLoading}
+              variant="outline"
+              className="h-12 flex-1 rounded-2xl"
+            />
+            <Button
+              title="Buy Now"
+              onPress={handleBuyNow}
+              className="h-12 flex-1 rounded-2xl"
+            />
+          </View>
         </View>
       ) : null}
     </SafeAreaView>

@@ -6,6 +6,7 @@ import { buildProductOrderBy, buildProductWhere } from "./product.query";
 import {
   CreateProductInput,
   GetProductsQuery,
+  UpdateProductInput,
   UpdateProductStatusBody,
 } from "./product.validation";
 
@@ -126,6 +127,46 @@ export async function getMyProducts(userId: string) {
     active: formatted.filter((p) => p.status === ProductStatus.ACTIVE),
     sold: formatted.filter((p) => p.status === ProductStatus.SOLD),
   };
+}
+
+export async function updateProduct(
+  id: string,
+  userId: string,
+  input: UpdateProductInput
+) {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: { id: true, userId: true },
+  });
+
+  if (!product) {
+    throw new AppError("Product not found", 404);
+  }
+
+  if (product.userId !== userId) {
+    throw new AppError("You are not allowed to update this product", 403);
+  }
+
+  await ensureCategoryExists(input.categoryId);
+
+  if (!input.images.length) {
+    throw new AppError("At least one product image is required", 400);
+  }
+
+  const updated = await prisma.product.update({
+    where: { id },
+    data: {
+      title: input.title,
+      description: input.description,
+      price: input.price,
+      condition: input.condition,
+      categoryId: input.categoryId,
+      images: input.images,
+    },
+    include: productInclude,
+  });
+
+  return formatProduct(updated);
 }
 
 export async function updateProductStatus(

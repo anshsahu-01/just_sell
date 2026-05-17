@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../../middleware/auth";
 import {
   handleProductImageUpload,
+  processOptionalProductImages,
   processProductImages,
 } from "../../middleware/upload";
 import { validate } from "../../middleware/validate";
@@ -10,6 +11,7 @@ import {
   createProductSchema,
   getProductsQuerySchema,
   productIdParamSchema,
+  updateProductSchema,
   updateProductStatusSchema,
 } from "./product.validation";
 
@@ -40,6 +42,16 @@ router.get(
   "/:id",
   validate(productIdParamSchema, "params"),
   productController.getProductById
+);
+
+router.patch(
+  "/:id",
+  authenticate,
+  handleProductImageUpload,
+  processOptionalProductImages,
+  validate(productIdParamSchema, "params"),
+  validate(updateProductSchema),
+  productController.updateProduct
 );
 
 router.patch(

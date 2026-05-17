@@ -7,6 +7,7 @@ import { cn } from "@/utils/cn";
 
 type MyListingCardProps = {
   product: Product;
+  onEdit?: () => void;
   onMarkSold?: () => void;
   onDelete?: () => void;
   showMarkSold?: boolean;
@@ -14,6 +15,7 @@ type MyListingCardProps = {
 
 export function MyListingCard({
   product,
+  onEdit,
   onMarkSold,
   onDelete,
   showMarkSold = true,
@@ -73,6 +75,14 @@ export function MyListingCard({
       </Pressable>
 
       <View className="mt-2 flex-row gap-2">
+        {onEdit ? (
+          <Pressable
+            onPress={onEdit}
+            className="flex-1 items-center rounded border border-line py-2"
+          >
+            <Text className="text-[13px] font-medium text-ink">Edit</Text>
+          </Pressable>
+        ) : null}
         {showMarkSold && !isSold && onMarkSold ? (
           <Pressable
             onPress={confirmMarkSold}

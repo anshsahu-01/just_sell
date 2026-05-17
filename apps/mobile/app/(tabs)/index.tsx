@@ -61,7 +61,6 @@ export default function HomeScreen() {
   );
 
   const heroImage = products.find((product) => product.images?.[0])?.images?.[0];
-  const cartCount = Math.min(products.length, 3);
 
   const categoryOptions = useMemo(
     () => [{ id: "all", name: "All" }, ...categories.slice(0, 5)],
@@ -127,9 +126,9 @@ export default function HomeScreen() {
                   <Ionicons name="menu-outline" size={20} color="#111111" />
                 </Pressable>
                 <View className="flex-1 items-center px-3">
-                  <BrandMark subtitle={user?.collegeName ?? "Campus marketplace"} size={300}/>
+                  <BrandMark subtitle={user?.collegeName ?? "Campus marketplace"} />
                 </View>
-                <CartButton count={cartCount} />
+                <CartButton />
               </View>
             </View>
 

@@ -57,6 +57,37 @@ export async function createProduct(input: CreateProductInput, token: string) {
   return res.data;
 }
 
+export async function updateProduct(
+  id: string,
+  input: CreateProductInput & { existingImages?: string[] },
+  token: string
+) {
+  const formData = new FormData();
+  formData.append("title", input.title);
+  formData.append("description", input.description);
+  formData.append("price", input.price);
+  formData.append("condition", input.condition);
+  formData.append("categoryId", input.categoryId);
+  formData.append("existingImages", JSON.stringify(input.existingImages ?? []));
+
+  input.imageUris.forEach((uri, index) => {
+    formData.append("images", {
+      uri,
+      type: "image/jpeg",
+      name: `product-${index}.jpg`,
+    } as unknown as Blob);
+  });
+
+  const res = await apiRequest<ApiResponse<Product>>(`/products/${id}`, {
+    method: "PATCH",
+    body: formData,
+    token,
+    isFormData: true,
+  });
+
+  return res.data;
+}
+
 export async function getMyProducts(token: string) {
   const res = await apiRequest<ApiResponse<MyProductsResponse>>("/products/me", {
     token,
