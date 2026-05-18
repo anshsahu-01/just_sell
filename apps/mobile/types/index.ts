@@ -75,7 +75,11 @@ export interface ChatMessage {
 
 export interface ConversationDetail {
   id: string;
+  productId: string;
   productTitle: string;
+  productImage: string | null;
+  productPrice: number;
+  isSold: boolean;
   otherUser: PublicUser;
   messages: ChatMessage[];
 }

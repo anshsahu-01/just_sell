@@ -169,7 +169,7 @@ export async function getConversationMessages(
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
-      product: { select: { id: true, title: true } },
+      product: { select: { id: true, title: true, images: true, price: true, isSold: true, status: true } },
       buyer: { select: userPublicSelect },
       seller: { select: userPublicSelect },
     },
@@ -192,7 +192,11 @@ export async function getConversationMessages(
 
   return {
     id: conversation.id,
+    productId: conversation.product.id,
     productTitle: conversation.product.title,
+    productImage: conversation.product.images[0] ?? null,
+    productPrice: Number(conversation.product.price),
+    isSold: conversation.product.isSold || conversation.product.status === "SOLD",
     otherUser,
     messages: messages.map((m) => ({
       id: m.id,
