@@ -41,3 +41,28 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   );
   res.status(201).json({ success: true, data: message });
 });
+
+export const editMessage = asyncHandler(async (req: Request, res: Response) => {
+  const messageId = req.params.messageId as string;
+  const input = req.body;
+  const message = await chatService.editMessage(messageId, req.user!.userId, input);
+  res.json({ success: true, data: message });
+});
+
+export const deleteMessage = asyncHandler(async (req: Request, res: Response) => {
+  const messageId = req.params.messageId as string;
+  const message = await chatService.deleteMessage(messageId, req.user!.userId);
+  res.json({ success: true, data: message });
+});
+
+export const clearConversation = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  await chatService.clearConversation(id, req.user!.userId);
+  res.json({ success: true });
+});
+
+export const deleteConversation = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  await chatService.deleteConversation(id, req.user!.userId);
+  res.json({ success: true });
+});

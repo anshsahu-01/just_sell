@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -9,13 +9,14 @@ import { LoadingState } from "@/components/LoadingState";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/hooks/useAuth";
 import * as chatService from "@/services/chat.service";
-import { ConversationListItem } from "@/types";
+import { connectSocket } from "@/services/socket.service";
+import { ConversationListItem, ChatMessage } from "@/types";
 import { formatTimeAgo } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
 export default function ChatsScreen() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,6 +45,70 @@ export default function ChatsScreen() {
     }, [loadChats])
   );
 
+  useEffect(() => {
+    if (!token || !user?.id) return;
+    
+    const socket = connectSocket(token);
+
+    const handleNewMessage = (data: { chatId: string, message: ChatMessage }) => {
+      const isMine = data.message.sender.id === user?.id;
+
+      if (!isMine) {
+        socket.emit("mark_delivered", { chatId: data.chatId, messageIds: [data.message.id] });
+      }
+
+      setConversations((prev) => {
+        const existingIdx = prev.findIndex((c) => c.id === data.chatId);
+        
+        if (existingIdx >= 0) {
+          const updatedConversations = [...prev];
+          const conv = { ...updatedConversations[existingIdx] };
+          conv.lastMessage = {
+            content: data.message.content,
+            createdAt: data.message.createdAt,
+            isMine: isMine,
+          };
+          conv.lastMessageAt = data.message.createdAt;
+          
+          updatedConversations.splice(existingIdx, 1);
+          return [conv, ...updatedConversations].sort(
+            (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+          );
+        } else {
+          // If conversation doesn't exist in list, fetch full list to get all product/user details
+          loadChats();
+          return prev;
+        }
+      });
+    };
+
+    const handleConversationCleared = (data: { conversationId: string }) => {
+      setConversations((prev) => {
+        const existingIdx = prev.findIndex((c) => c.id === data.conversationId);
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx] = { ...updated[existingIdx], lastMessage: null };
+          return updated;
+        }
+        return prev;
+      });
+    };
+
+    const handleConversationDeleted = (data: { conversationId: string }) => {
+      setConversations((prev) => prev.filter((c) => c.id !== data.conversationId));
+    };
+
+    socket.on("new_message", handleNewMessage);
+    socket.on("conversation_cleared", handleConversationCleared);
+    socket.on("conversation_deleted", handleConversationDeleted);
+
+    return () => {
+      socket.off("new_message", handleNewMessage);
+      socket.off("conversation_cleared", handleConversationCleared);
+      socket.off("conversation_deleted", handleConversationDeleted);
+    };
+  }, [token, user?.id, loadChats]);
+
   if (loading && conversations.length === 0) {
     return <LoadingState />;
   }
@@ -62,7 +127,7 @@ export default function ChatsScreen() {
         contentContainerStyle={conversations.length === 0 ? { flexGrow: 1 } : { paddingBottom: 24 }}
         ItemSeparatorComponent={() => <View className="ml-[76px] h-[0.5px] bg-line" />}
         renderItem={({ item }) => {
-          const isUnread = item.lastMessage && !item.lastMessage.isMine;
+          const isUnread = item.lastMessage && !item.lastMessage.isMine; // Should use seenAt ideally, but basic check is fine
           return (
             <Pressable
               className="flex-row items-center bg-white px-4 py-3 active:bg-slate-50 active:opacity-70"

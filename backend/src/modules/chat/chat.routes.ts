@@ -33,4 +33,26 @@ router.post(
   chatController.sendMessage
 );
 
+router.delete(
+  "/conversations/:id",
+  validate(conversationIdParamSchema, "params"),
+  chatController.deleteConversation
+);
+
+router.delete(
+  "/conversations/:id/messages",
+  validate(conversationIdParamSchema, "params"),
+  chatController.clearConversation
+);
+
+router.patch(
+  "/messages/:messageId",
+  chatController.editMessage
+);
+
+router.delete(
+  "/messages/:messageId",
+  chatController.deleteMessage
+);
+
 export default router;

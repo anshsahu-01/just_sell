@@ -52,3 +52,61 @@ export async function sendMessage(
   );
   return res.data;
 }
+
+export async function editMessage(
+  messageId: string,
+  content: string,
+  token: string
+) {
+  const res = await apiRequest<ApiResponse<ChatMessage>>(
+    `/chats/messages/${messageId}`,
+    {
+      method: "PATCH",
+      body: { content },
+      token,
+    }
+  );
+  return res.data;
+}
+
+export async function deleteMessage(
+  messageId: string,
+  token: string
+) {
+  const res = await apiRequest<ApiResponse<ChatMessage>>(
+    `/chats/messages/${messageId}`,
+    {
+      method: "DELETE",
+      token,
+    }
+  );
+  return res.data;
+}
+
+export async function clearConversation(
+  conversationId: string,
+  token: string
+) {
+  const res = await apiRequest<ApiResponse<void>>(
+    `/chats/conversations/${conversationId}/messages`,
+    {
+      method: "DELETE",
+      token,
+    }
+  );
+  return res.data;
+}
+
+export async function deleteConversation(
+  conversationId: string,
+  token: string
+) {
+  const res = await apiRequest<ApiResponse<void>>(
+    `/chats/conversations/${conversationId}`,
+    {
+      method: "DELETE",
+      token,
+    }
+  );
+  return res.data;
+}

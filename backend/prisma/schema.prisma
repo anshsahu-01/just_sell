@@ -108,11 +108,15 @@ model Conversation {
 }
 
 model Message {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   conversationId String
   senderId       String
   content        String
-  createdAt      DateTime @default(now())
+  deliveredAt    DateTime?
+  seenAt         DateTime?
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 

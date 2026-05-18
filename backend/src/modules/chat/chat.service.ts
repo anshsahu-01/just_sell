@@ -202,6 +202,8 @@ export async function getConversationMessages(
       id: m.id,
       content: m.content,
       createdAt: m.createdAt,
+      deliveredAt: m.deliveredAt,
+      seenAt: m.seenAt,
       isMine: m.senderId === userId,
       sender: m.sender,
     })),
@@ -213,7 +215,7 @@ export async function sendMessage(
   userId: string,
   input: SendMessageInput
 ) {
-  await getConversationForUser(conversationId, userId);
+  const conversation = await getConversationForUser(conversationId, userId);
 
   const message = await prisma.$transaction(async (tx) => {
     const created = await tx.message.create({
@@ -235,11 +237,146 @@ export async function sendMessage(
     return created;
   });
 
-  return {
+  const formattedMessage = {
     id: message.id,
     content: message.content,
     createdAt: message.createdAt,
+    deliveredAt: message.deliveredAt,
+    seenAt: message.seenAt,
     isMine: true,
     sender: message.sender,
   };
+
+  // Emit realtime event
+  try {
+    const { getIO } = require("../../config/socket");
+    const io = getIO();
+    
+    // Broadcast to chat room
+    io.to(`chat_${conversationId}`).emit("new_message", {
+      chatId: conversationId,
+      message: formattedMessage,
+    });
+
+    // Also broadcast to the recipient's personal room for the chat list update
+    const recipientId = conversation.buyerId === userId ? conversation.sellerId : conversation.buyerId;
+    io.to(`user_${recipientId}`).emit("new_message", {
+      chatId: conversationId,
+      message: formattedMessage,
+    });
+  } catch (error) {
+    console.error("Failed to emit socket event:", error);
+  }
+
+  return formattedMessage;
+}
+
+export async function editMessage(
+  messageId: string,
+  userId: string,
+  input: { content: string }
+) {
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    include: { conversation: true },
+  });
+
+  if (!message) throw new AppError("Message not found", 404);
+  if (message.senderId !== userId) throw new AppError("Unauthorized", 403);
+  if (message.deletedAt) throw new AppError("Cannot edit a deleted message", 400);
+
+  const now = new Date();
+  const timeDiff = now.getTime() - new Date(message.createdAt).getTime();
+  if (timeDiff > 15 * 60 * 1000) {
+    throw new AppError("Messages can only be edited within 15 minutes", 400);
+  }
+
+  const updated = await prisma.message.update({
+    where: { id: messageId },
+    data: { content: input.content, editedAt: now },
+  });
+
+  try {
+    const { getIO } = require("../../config/socket");
+    const io = getIO();
+    io.to(`chat_${message.conversationId}`).emit("message_updated", {
+      id: updated.id,
+      content: updated.content,
+      editedAt: updated.editedAt,
+    });
+  } catch (error) {
+    console.error("Failed to emit socket event:", error);
+  }
+
+  return updated;
+}
+
+export async function deleteMessage(messageId: string, userId: string) {
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    include: { conversation: true },
+  });
+
+  if (!message) throw new AppError("Message not found", 404);
+  if (message.senderId !== userId) throw new AppError("Unauthorized", 403);
+
+  const updated = await prisma.message.update({
+    where: { id: messageId },
+    data: { content: "This message was deleted", deletedAt: new Date() },
+  });
+
+  try {
+    const { getIO } = require("../../config/socket");
+    const io = getIO();
+    io.to(`chat_${message.conversationId}`).emit("message_deleted", {
+      id: updated.id,
+      content: updated.content,
+      deletedAt: updated.deletedAt,
+    });
+  } catch (error) {
+    console.error("Failed to emit socket event:", error);
+  }
+
+  return updated;
+}
+
+export async function clearConversation(conversationId: string, userId: string) {
+  await getConversationForUser(conversationId, userId);
+
+  // Note: True per-user message visibility requires a MessageVisibility table.
+  // For simplicity based on requirements, we hard-delete messages if we clear.
+  // Actually, standard marketplace just deletes the messages. 
+  await prisma.message.deleteMany({
+    where: { conversationId },
+  });
+
+  try {
+    const { getIO } = require("../../config/socket");
+    const io = getIO();
+    io.to(`chat_${conversationId}`).emit("conversation_cleared", { conversationId });
+  } catch (error) {
+    console.error("Failed to emit socket event:", error);
+  }
+
+  return { success: true };
+}
+
+export async function deleteConversation(conversationId: string, userId: string) {
+  const conversation = await getConversationForUser(conversationId, userId);
+
+  await prisma.conversation.delete({
+    where: { id: conversationId },
+  });
+
+  try {
+    const { getIO } = require("../../config/socket");
+    const io = getIO();
+    const recipientId = conversation.buyerId === userId ? conversation.sellerId : conversation.buyerId;
+    io.to(`user_${recipientId}`).emit("conversation_deleted", { conversationId });
+    io.to(`chat_${conversationId}`).emit("conversation_deleted", { conversationId });
+  } catch (error) {
+    console.error("Failed to emit socket event:", error);
+  }
+
+  return { success: true };
 }

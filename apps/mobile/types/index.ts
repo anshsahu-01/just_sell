@@ -69,6 +69,10 @@ export interface ChatMessage {
   id: string;
   content: string;
   createdAt: string;
+  deliveredAt: string | null;
+  seenAt: string | null;
+  editedAt: string | null;
+  deletedAt: string | null;
   isMine: boolean;
   sender: PublicUser;
 }

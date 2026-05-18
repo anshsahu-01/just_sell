@@ -12,5 +12,10 @@ export const sendMessageSchema = z.object({
   content: z.string().trim().min(1, "Message cannot be empty").max(2000),
 });
 
+export const editMessageSchema = z.object({
+  content: z.string().trim().min(1, "Message cannot be empty").max(1000, "Message too long"),
+});
+
 export type CreateConversationInput = z.infer<typeof createConversationSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+export type EditMessageInput = z.infer<typeof editMessageSchema>;
