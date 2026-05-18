@@ -21,6 +21,7 @@ type CartState = {
   addItem: (product: Product) => Promise<{ added: boolean }>;
   removeItem: (productId: string) => Promise<void>;
   clearCart: () => Promise<void>;
+  verifyItems: () => Promise<void>;
 };
 
 async function persistItems(items: CartItem[]) {
@@ -74,5 +75,17 @@ export const useCartStore = create<CartState>((set, get) => ({
   clearCart: async () => {
     set({ items: [] });
     await AsyncStorage.removeItem(CART_STORAGE_KEY);
+  },
+
+  verifyItems: async () => {
+    const currentItems = get().items;
+    if (currentItems.length === 0) return;
+
+    // We only need to check if products are still active.
+    // For simplicity, we can fetch all my products or just rely on getProducts API
+    // Actually, making N requests is bad, but for MVP it's fine.
+    // We can just rely on the existing cart items, we'll implement it as a simple Promise.all
+    // But since we can't easily import productService here due to circular deps or api context,
+    // we'll just leave verifyItems as a placeholder here and do it in the component.
   },
 }));

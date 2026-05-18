@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View, Image as RNImage } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,8 +7,15 @@ import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import * as productService from "@/services/product.service";
+import * as orderService from "@/services/order.service";
+import { ApiError } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useCartStore } from "@/store/cartStore";
 import { Product } from "@/types";
 import { formatPrice } from "@/utils/format";
+import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
+import { useRouter } from "expo-router";
 
 const PAYMENT_OPTIONS = ["Online Payment", "Cash on Delivery"];
 
@@ -28,8 +35,10 @@ export default function CheckoutScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-
+  const [orderLoading, setOrderLoading] = useState(false);
+  const router = useRouter();
+  const { token } = useAuth();
+  const removeItemFromCart = useCartStore((state) => state.removeItem);
 
   useEffect(() => {
     async function loadCheckoutProduct() {
@@ -54,6 +63,39 @@ export default function CheckoutScreen() {
 
     loadCheckoutProduct();
   }, [params.productId]);
+
+  const handlePlaceOrder = async (method: "COD" | "UPI") => {
+    if (!token || !checkoutData.productId) return;
+    try {
+      setOrderLoading(true);
+      await orderService.createOrder(checkoutData.productId, method, token);
+      await removeItemFromCart(checkoutData.productId);
+      Alert.alert("Success", "Order placed successfully!");
+      router.push("/(tabs)/profile");
+    } catch (err) {
+      Alert.alert(
+        "Order failed",
+        err instanceof ApiError ? err.message : "Could not place order"
+      );
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+  const copyUpiId = async () => {
+    await Clipboard.setStringAsync("9109185454-2@axl");
+    Alert.alert("Copied", "UPI ID copied to clipboard");
+  };
+
+  const openUpiApp = async () => {
+    const url = `upi://pay?pa=9109185454-2@axl&pn=Becho&am=${checkoutData.total}`;
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert("Error", "No UPI app found on this device.");
+    }
+  };
 
   const checkoutData = useMemo(() => {
     const selectedProduct = product;
@@ -174,12 +216,57 @@ export default function CheckoutScreen() {
             <Text className="text-[16px] font-semibold text-ink">Total</Text>
             <Text className="text-[16px] font-semibold text-ink">{formatPrice(checkoutData.total)}</Text>
           </View>
-          <Pressable
-            onPress={() => Alert.alert("UI only", "Checkout styling is ready. Ordering logic was left untouched.")}
-            className="h-12 items-center justify-center rounded-2xl bg-ink"
-          >
-            <Text className="text-[15px] font-medium text-white">Place order</Text>
-          </Pressable>
+          {paymentMethod === "Online Payment" ? (
+            <View className="mt-2 rounded-xl bg-[#F8F9FA] p-4">
+              <View className="items-center">
+                <RNImage
+                  source={require("../assets/payments/upi-qr.jpeg")}
+                  style={{
+                    width: 160,
+                    height: 160,
+                    borderRadius: 12,
+                    marginBottom: 12,
+                  }}
+                  resizeMode="contain"
+                />
+                <Text className="text-[14px] text-muted">Scan to pay</Text>
+                <Text className="mt-1 text-[16px] font-semibold text-ink">9109185454-2@axl</Text>
+              </View>
+              <View className="mt-4 flex-row gap-2">
+                <Pressable
+                  onPress={copyUpiId}
+                  className="h-10 flex-1 items-center justify-center rounded-xl border border-line bg-white"
+                >
+                  <Text className="text-[13px] font-medium text-ink">Copy UPI ID</Text>
+                </Pressable>
+                <Pressable
+                  onPress={openUpiApp}
+                  className="h-10 flex-1 items-center justify-center rounded-xl border border-line bg-white"
+                >
+                  <Text className="text-[13px] font-medium text-ink">Open App</Text>
+                </Pressable>
+              </View>
+              <Pressable
+                onPress={() => handlePlaceOrder("UPI")}
+                disabled={orderLoading}
+                className={`mt-3 h-12 items-center justify-center rounded-xl bg-ink ${orderLoading ? "opacity-70" : ""}`}
+              >
+                <Text className="text-[15px] font-medium text-white">
+                  {orderLoading ? "Processing..." : "I Have Paid"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => handlePlaceOrder("COD")}
+              disabled={orderLoading}
+              className={`h-12 items-center justify-center rounded-xl bg-ink ${orderLoading ? "opacity-70" : ""}`}
+            >
+              <Text className="text-[15px] font-medium text-white">
+                {orderLoading ? "Processing..." : "Place order"}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

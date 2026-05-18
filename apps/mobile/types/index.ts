@@ -123,3 +123,22 @@ export interface CreateProductInput {
   categoryId: string;
   imageUris: string[];
 }
+
+export type PaymentMethod = "COD" | "UPI";
+
+export type PaymentStatus = "payment_pending" | "confirmed" | "cancelled";
+
+export interface Order {
+  id: string;
+  productId: string;
+  buyerId: string;
+  sellerId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  createdAt: string;
+  product: Pick<Product, "id" | "title" | "images" | "price">;
+  buyer: PublicUser;
+  seller: PublicUser;
+}
+

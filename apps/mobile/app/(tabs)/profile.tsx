@@ -19,16 +19,20 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/hooks/useAuth";
 import * as productService from "@/services/product.service";
 import { ApiError } from "@/services/api";
-import { Product } from "@/types";
+import { Product, Order } from "@/types";
 import { useFavoritesStore } from "@/store/favoritesStore";
-
+import * as orderService from "@/services/order.service";
+import { OrderCard } from "@/components/OrderCard";
 export default function ProfileScreen() {
   const { user, token, logout } = useAuth();
   const favoriteProducts = useFavoritesStore((state) => state.products);
   const [active, setActive] = useState<Product[]>([]);
   const [sold, setSold] = useState<Product[]>([]);
+  const [myOrders, setMyOrders] = useState<Order[]>([]);
+  const [mySales, setMySales] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const initials = useMemo(() => {
     const name = user?.name?.trim() ?? "";
@@ -46,12 +50,22 @@ export default function ProfileScreen() {
       try {
         if (isRefresh) setRefreshing(true);
         else setLoading(true);
-        const data = await productService.getMyProducts(token);
-        setActive(data.active);
-        setSold(data.sold);
+        
+        const [productsData, ordersData, salesData] = await Promise.all([
+          productService.getMyProducts(token),
+          orderService.getMyOrders(token),
+          orderService.getMySales(token),
+        ]);
+        
+        setActive(productsData.active);
+        setSold(productsData.sold);
+        setMyOrders(ordersData);
+        setMySales(salesData);
       } catch {
         setActive([]);
         setSold([]);
+        setMyOrders([]);
+        setMySales([]);
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -89,6 +103,22 @@ export default function ProfileScreen() {
         "Failed",
         err instanceof ApiError ? err.message : "Could not delete listing"
       );
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, status: "confirmed" | "cancelled") => {
+    if (!token) return;
+    try {
+      setActionLoading(true);
+      await orderService.updateOrderStatus(orderId, status, token);
+      await loadListings(true);
+    } catch (err) {
+      Alert.alert(
+        "Failed",
+        err instanceof ApiError ? err.message : "Could not update order status"
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -147,7 +177,9 @@ export default function ProfileScreen() {
             { icon: "bag-handle-outline", title: "My listings", value: `${active.length} active` },
             { icon: "archive-outline", title: "Sold archive", value: `${sold.length} sold` },
             { icon: "heart-outline", title: "Favourites", value: `${favoriteProducts.length} saved` },
-          ].map((item, index) => (
+            { icon: "cart-outline", title: "My orders", value: `${myOrders.length} orders` },
+            { icon: "cash-outline", title: "My sales", value: `${mySales.length} sales` },
+          ].map((item, index, arr) => (
             <View key={item.title}>
               <View className="flex-row items-center gap-3 px-4 py-4">
                 <Ionicons name={item.icon as never} size={18} color="#111111" />
@@ -156,7 +188,7 @@ export default function ProfileScreen() {
                   <Text className="mt-1 text-[13px] text-muted">{item.value}</Text>
                 </View>
               </View>
-              {index < 2 ? <View className="mx-4 h-px bg-line" /> : null}
+              {index < arr.length - 1 ? <View className="mx-4 h-px bg-line" /> : null}
             </View>
           ))}
         </View>
@@ -199,6 +231,39 @@ export default function ProfileScreen() {
                   onEdit={() => router.push(`/product/edit/${product.id}`)}
                   showMarkSold={false}
                   onDelete={() => handleDelete(product.id)}
+                />
+              ))
+            )}
+          </View>
+        </View>
+
+        <View className="mt-4">
+          <Text className="mb-3 text-[18px] font-semibold text-ink">My orders</Text>
+          <View className="overflow-hidden rounded-2xl border border-line bg-white">
+            {myOrders.length === 0 ? (
+              <Text className="px-4 py-5 text-[14px] text-muted">No orders yet</Text>
+            ) : (
+              myOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))
+            )}
+          </View>
+        </View>
+
+        <View className="mt-4">
+          <Text className="mb-3 text-[18px] font-semibold text-ink">Sales</Text>
+          <View className="overflow-hidden rounded-2xl border border-line bg-white">
+            {mySales.length === 0 ? (
+              <Text className="px-4 py-5 text-[14px] text-muted">No sales yet</Text>
+            ) : (
+              mySales.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  isSeller
+                  loading={actionLoading}
+                  onConfirm={() => handleUpdateOrderStatus(order.id, "confirmed")}
+                  onCancel={() => handleUpdateOrderStatus(order.id, "cancelled")}
                 />
               ))
             )}
