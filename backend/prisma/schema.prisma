@@ -41,6 +41,11 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
 
+  mobileNumber String?
+  bio          String?
+  isDeleted    Boolean  @default(false)
+  deletedAt    DateTime?
+
   products              Product[]
   conversationsAsBuyer  Conversation[] @relation("ConversationBuyer")
   conversationsAsSeller Conversation[] @relation("ConversationSeller")

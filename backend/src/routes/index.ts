@@ -4,6 +4,7 @@ import categoryRoutes from "../modules/category/category.routes";
 import chatRoutes from "../modules/chat/chat.routes";
 import productRoutes from "../modules/product/product.routes";
 import orderRoutes from "../modules/order/order.routes";
+import userRoutes from "../modules/user/user.routes";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/chats", chatRoutes);
 router.use("/orders", orderRoutes);
+router.use("/users", userRoutes);
 
 export default router;

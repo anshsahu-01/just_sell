@@ -23,6 +23,21 @@ const productImageMulter = multer({
   },
 }).array("images", MAX_FILES);
 
+const profileImageMulter = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE,
+    files: 1,
+  },
+  fileFilter: (_req, file, callback) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      callback(null, true);
+      return;
+    }
+    callback(new AppError("Only JPEG, PNG, and WebP images are allowed", 400));
+  },
+}).single("profileImage");
+
 export function handleProductImageUpload(
   req: Request,
   res: Response,
@@ -75,6 +90,45 @@ export const processOptionalProductImages = asyncHandler(
     }
 
     req.uploadedImageUrls = await uploadImages(files);
+    next();
+  }
+);
+
+export function handleProfileImageUpload(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  profileImageMulter(req, res, (error) => {
+    if (error instanceof MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        next(new AppError("Profile image must be smaller than 5MB", 400));
+        return;
+      }
+      next(new AppError(error.message, 400));
+      return;
+    }
+
+    if (error) {
+      next(error);
+      return;
+    }
+
+    next();
+  });
+}
+
+export const processProfileImage = asyncHandler(
+  async (req: Request, _res: Response, next: NextFunction) => {
+    const file = req.file as Express.Multer.File | undefined;
+
+    if (!file) {
+      next();
+      return;
+    }
+
+    const urls = await uploadImages([file], "becho/profiles");
+    req.uploadedImageUrls = urls;
     next();
   }
 );

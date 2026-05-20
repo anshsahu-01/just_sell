@@ -40,3 +40,24 @@ export async function uploadImages(
     throw new AppError("Failed to upload images", 500);
   }
 }
+
+export async function deleteImageFromCloudinary(url: string): Promise<void> {
+  try {
+    // Basic safeguard: skip deletion if the URL doesn't look like a cloudinary URL or if it's a default avatar
+    if (!url.includes("cloudinary.com") || url.includes("default") || url.includes("avatar")) {
+      console.log(`Skipping deletion for non-cloudinary or default image: ${url}`);
+      return;
+    }
+
+    const segments = url.split("/");
+    const filename = segments.pop();
+    if (!filename) return;
+    const publicIdWithFolder = segments.pop() + "/" + filename.split(".")[0];
+    const publicId = publicIdWithFolder;
+
+    await cloudinary.uploader.destroy(publicId);
+    console.log(`Successfully deleted Cloudinary image: ${publicId}`);
+  } catch (error) {
+    console.warn(`Failed to delete old image from Cloudinary: ${url}`, error);
+  }
+}

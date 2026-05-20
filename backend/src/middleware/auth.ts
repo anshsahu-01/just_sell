@@ -71,6 +71,10 @@ export async function authenticate(
           });
 
           if (user) {
+            if (user.isDeleted || user.deletedAt !== null) {
+               next(new AppError("Account deleted", 401));
+               return;
+            }
             // Link clerkId to existing legacy user safely without changing password
             user = await prisma.user.update({
               where: { id: user.id },
@@ -93,6 +97,11 @@ export async function authenticate(
             },
           });
         }
+      }
+
+      if (user.isDeleted || user.deletedAt !== null) {
+        next(new AppError("Account deleted", 401));
+        return;
       }
 
       req.user = { userId: user.id, role: user.role };

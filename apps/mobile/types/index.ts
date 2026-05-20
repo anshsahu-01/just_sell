@@ -9,6 +9,10 @@ export interface User {
   isVerified: boolean;
   role: Role;
   createdAt: string;
+  mobileNumber?: string | null;
+  bio?: string | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
 }
 
 export interface Category {

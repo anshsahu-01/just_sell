@@ -103,7 +103,7 @@ export default function RegisterScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              placeholder="Min 6 characters"
+              placeholder="Min 8 characters"
             />
 
             {error ? <Text className="mb-3 text-[13px] text-danger">{error}</Text> : null}

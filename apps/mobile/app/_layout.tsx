@@ -107,6 +107,10 @@ function InitialLayout() {
           name="checkout"
           options={{ headerShown: false, presentation: "card" }}
         />
+        <Stack.Screen
+          name="profile/edit-profile"
+          options={{ headerShown: false, presentation: "card" }}
+        />
       </Stack>
       {(!isLoaded || !isHydrated) && (
         <View className="absolute inset-0 bg-white items-center justify-center z-[9999]">
