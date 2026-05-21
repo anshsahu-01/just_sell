@@ -132,6 +132,12 @@ export default function LoginScreen() {
                 secureTextEntry
                 placeholder="Your password"
               />
+              <Pressable
+                onPress={() => router.push("/(auth)/forgot-password")}
+                className="self-end mb-4"
+              >
+                <Text className="text-[14px] font-medium text-ink">Forgot password?</Text>
+              </Pressable>
               {error ? <Text className="mb-3 text-[13px] text-danger">{error}</Text> : null}
               <Button title="Log in" onPress={handleLogin} loading={loading} className="rounded-2xl" />
             </View>

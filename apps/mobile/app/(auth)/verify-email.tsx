@@ -163,7 +163,7 @@ export default function VerifyEmailScreen() {
               onChangeText={handleCodeChange}
               keyboardType="number-pad"
               textContentType="oneTimeCode"
-              maxLength={6}
+              maxLength={1}
               autoFocus
               className="absolute inset-0 text-[1px] bg-transparent text-transparent z-10"
               style={{ color: "transparent" }}
