@@ -8,6 +8,7 @@ export const createOrderSchema = z.object({
   }),
   utrNumber: z.string().optional(),
   paymentScreenshot: z.string().optional(),
+  paymentStatus: z.nativeEnum(PaymentStatus).optional(),
   mobileNumber: z
     .string()
     .trim()

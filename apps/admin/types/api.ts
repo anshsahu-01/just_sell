@@ -46,4 +46,6 @@ export type AdminOrder = {
   seller?: { id: string; name: string; email?: string };
   utrNumber?: string | null;
   paymentScreenshot?: string | null;
+  mobileNumber?: string | null;
+  locationDetails?: string | null;
 };

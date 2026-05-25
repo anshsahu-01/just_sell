@@ -8,17 +8,30 @@ export async function createOrder(
   paymentMethod: PaymentMethod,
   mobileNumber: string,
   deliveryAddress: string,
-  token: string
+  token: string,
+  options?: {
+    utrNumber?: string;
+    paymentScreenshot?: string;
+    paymentStatus?: PaymentStatus;
+  }
 ) {
+  const payload = {
+    productId,
+    paymentMethod,
+    mobileNumber,
+    deliveryAddress,
+    locationDetails: deliveryAddress,
+    utrNumber: options?.utrNumber,
+    paymentScreenshot: options?.paymentScreenshot,
+    paymentStatus: options?.paymentStatus,
+  };
+  const payloadSizeBytes = new TextEncoder().encode(JSON.stringify(payload)).length;
+  console.log("Final payload size (bytes)", payloadSizeBytes);
+  console.log("ONLINE ORDER PAYLOAD", payload);
+
   const res = await apiRequest<ApiResponse<Order>>("/orders", {
     method: "POST",
-    body: {
-      productId,
-      paymentMethod,
-      mobileNumber,
-      deliveryAddress,
-      locationDetails: deliveryAddress,
-    },
+    body: payload,
     token,
   });
   return res.data;

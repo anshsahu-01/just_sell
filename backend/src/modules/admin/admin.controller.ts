@@ -165,6 +165,8 @@ export const getOrders = asyncHandler(async (req: Request, res: Response) => {
       createdAt: true,
       utrNumber: true,
       paymentScreenshot: true,
+      mobileNumber: true,
+      locationDetails: true,
       product: { select: { id: true, title: true, images: true, price: true } },
       buyer: { select: { id: true, name: true, email: true } },
       seller: { select: { id: true, name: true, email: true } },

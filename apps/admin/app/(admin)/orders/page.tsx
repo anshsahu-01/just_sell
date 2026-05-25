@@ -3,7 +3,6 @@
 import { DataState } from "@/components/DataState";
 import { PageShell } from "@/components/PageShell";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { formatDate } from "@/lib/format";
 import { useAdminApiService } from "@/services/api";
 import { useEffect, useMemo, useState } from "react";
 
@@ -74,12 +73,11 @@ export default function OrdersPage() {
               <tr>
                 <th className="px-3 py-2">Product</th>
                 <th className="px-3 py-2">Buyer</th>
-                <th className="px-3 py-2">Seller</th>
+                <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">Pickup address</th>
                 <th className="px-3 py-2">UTR</th>
                 <th className="px-3 py-2">Screenshot</th>
-                <th className="px-3 py-2">Amount</th>
                 <th className="px-3 py-2">Payment status</th>
-                <th className="px-3 py-2">Created at</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
@@ -98,7 +96,8 @@ export default function OrdersPage() {
                     </div>
                   </td>
                   <td className="px-3 py-2">{o.buyer?.name ?? "-"}</td>
-                  <td className="px-3 py-2">{o.seller?.name ?? "-"}</td>
+                  <td className="px-3 py-2">{o.mobileNumber ?? "-"}</td>
+                  <td className="px-3 py-2 max-w-[220px] truncate" title={o.locationDetails ?? ""}>{o.locationDetails ?? "-"}</td>
                   <td className="px-3 py-2">{(o as any).utrNumber ?? "-"}</td>
                   <td className="px-3 py-2">
                     { (o as any).paymentScreenshot ? (
@@ -107,9 +106,7 @@ export default function OrdersPage() {
                       <span className="text-slate-400">No proof</span>
                     ) }
                   </td>
-                  <td className="px-3 py-2">{o.amount ? `₹${o.amount}` : "-"}</td>
                   <td className="px-3 py-2">{o.paymentStatus ?? "-"}</td>
-                  <td className="px-3 py-2">{formatDate(o.createdAt)}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-2">
                       <button className="rounded-md bg-emerald-600 px-3 py-1 text-white text-sm" onClick={() => handleApprove(o.id)}>Approve</button>

@@ -2,6 +2,7 @@ import { OrderStatus, PaymentStatus, Prisma, ProductStatus } from "@prisma/clien
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../utils/AppError";
 import { CreateOrderBody, UpdateOrderStatusBody } from "./order.validation";
+import { uploadImageBuffer } from "../../utils/upload";
 
 const userSelect = {
   id: true,
@@ -36,6 +37,15 @@ function formatOrder(order: OrderWithRelations) {
 }
 
 export async function createOrder(buyerId: string, input: CreateOrderBody) {
+  let persistedPaymentScreenshot: string | null = input.paymentScreenshot ?? null;
+  if (persistedPaymentScreenshot?.startsWith("data:image/")) {
+    const base64 = persistedPaymentScreenshot.split(",")[1];
+    if (base64) {
+      const buffer = Buffer.from(base64, "base64");
+      persistedPaymentScreenshot = await uploadImageBuffer(buffer, "becho/orders");
+    }
+  }
+
   const product = await prisma.product.findUnique({
     where: { id: input.productId },
     select: { id: true, userId: true, price: true, status: true, isSold: true },
@@ -72,14 +82,22 @@ export async function createOrder(buyerId: string, input: CreateOrderBody) {
       sellerId: product.userId,
       amount: product.price,
       paymentMethod: input.paymentMethod,
-      paymentStatus: PaymentStatus.payment_pending,
+      paymentStatus: input.paymentStatus ?? PaymentStatus.payment_pending,
       utrNumber: input.utrNumber ?? null,
-      paymentScreenshot: input.paymentScreenshot ?? null,
+      paymentScreenshot: persistedPaymentScreenshot,
       orderStatus: OrderStatus.pending,
       mobileNumber: input.mobileNumber,
       locationDetails: input.locationDetails,
     },
     include: orderInclude,
+  });
+  console.log("DB SAVED ORDER", {
+    id: order.id,
+    paymentScreenshot: order.paymentScreenshot,
+    mobileNumber: order.mobileNumber,
+    locationDetails: order.locationDetails,
+    utrNumber: order.utrNumber,
+    paymentStatus: order.paymentStatus,
   });
 
   return formatOrder(order);
