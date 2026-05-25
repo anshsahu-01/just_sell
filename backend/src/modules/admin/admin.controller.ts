@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ProductStatus } from "@prisma/client";
+import { ProductStatus, PaymentStatus, OrderStatus } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../utils/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -156,15 +156,65 @@ export const deleteProduct = asyncHandler(async (req: Request, res: Response) =>
 
 export const getOrders = asyncHandler(async (req: Request, res: Response) => {
   await assertAdminAccess(req);
-
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
-      product: { select: { id: true, title: true } },
+    select: {
+      id: true,
+      amount: true,
+      paymentStatus: true,
+      createdAt: true,
+      utrNumber: true,
+      paymentScreenshot: true,
+      product: { select: { id: true, title: true, images: true, price: true } },
       buyer: { select: { id: true, name: true, email: true } },
       seller: { select: { id: true, name: true, email: true } },
     },
   });
 
-  res.json({ success: true, data: orders });
+  const formatted = orders.map((o) => ({
+    ...o,
+    amount: Number(o.amount),
+  }));
+
+  res.json({ success: true, data: formatted });
+});
+
+export const approveOrder = asyncHandler(async (req: Request, res: Response) => {
+  await assertAdminAccess(req);
+  const { id } = req.params;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({ where: { id } });
+    if (!order) throw new AppError("Order not found", 404);
+
+    const confirmed = await tx.order.update({
+      where: { id },
+      data: { paymentStatus: PaymentStatus.confirmed, orderStatus: OrderStatus.processing },
+      include: { product: true, buyer: true, seller: true },
+    });
+
+    await tx.product.update({ where: { id: confirmed.productId }, data: { status: ProductStatus.SOLD, isSold: true } });
+
+    await tx.order.updateMany({
+      where: { productId: confirmed.productId, id: { not: id }, orderStatus: OrderStatus.pending },
+      data: { paymentStatus: PaymentStatus.cancelled, orderStatus: OrderStatus.cancelled },
+    });
+
+    return confirmed;
+  });
+
+  res.json({ success: true, data: updated });
+});
+
+export const rejectOrder = asyncHandler(async (req: Request, res: Response) => {
+  await assertAdminAccess(req);
+  const { id } = req.params;
+
+  const updated = await prisma.order.update({
+    where: { id },
+    data: { paymentStatus: PaymentStatus.cancelled, orderStatus: OrderStatus.cancelled },
+    include: { product: true, buyer: true, seller: true },
+  });
+
+  res.json({ success: true, data: updated });
 });

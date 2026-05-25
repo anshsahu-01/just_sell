@@ -57,6 +57,10 @@ export function useAdminApiService() {
     const getUsers = async () => (await request<ApiEnvelope<AdminUser[]>>("/admin/users")).data ?? [];
     const getListings = async () => (await request<ApiEnvelope<AdminListing[]>>("/admin/products")).data ?? [];
     const getOrders = async () => (await request<ApiEnvelope<AdminOrder[]>>("/admin/orders")).data ?? [];
+    const approveOrder = async (id: string) =>
+      await request<ApiEnvelope<AdminOrder>>(`/admin/orders/${id}/approve`, "PATCH");
+    const rejectOrder = async (id: string) =>
+      await request<ApiEnvelope<AdminOrder>>(`/admin/orders/${id}/reject`, "PATCH");
     const getDashboardStats = async (): Promise<DashboardStats> =>
       (await request<ApiEnvelope<DashboardStats>>("/admin/stats")).data;
 
@@ -69,6 +73,6 @@ export function useAdminApiService() {
     const deleteListing = async (id: string) =>
       await request<ApiEnvelope<{ id: string }>>(`/admin/products/${id}`, "DELETE");
 
-    return { getUsers, getListings, getOrders, getDashboardStats, markListingSold, hideListing, restoreListing, deleteListing };
+    return { getUsers, getListings, getOrders, getDashboardStats, markListingSold, hideListing, restoreListing, deleteListing, approveOrder, rejectOrder };
   }, [getToken]);
 }

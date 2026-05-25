@@ -40,7 +40,10 @@ export type AdminOrder = {
   id: string;
   paymentStatus: string;
   createdAt: string;
-  product?: { id: string; title: string };
+  amount?: number;
+  product?: { id: string; title: string; images?: string[] };
   buyer?: { id: string; name: string; email?: string };
   seller?: { id: string; name: string; email?: string };
+  utrNumber?: string | null;
+  paymentScreenshot?: string | null;
 };

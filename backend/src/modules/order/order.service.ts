@@ -73,6 +73,8 @@ export async function createOrder(buyerId: string, input: CreateOrderBody) {
       amount: product.price,
       paymentMethod: input.paymentMethod,
       paymentStatus: PaymentStatus.payment_pending,
+      utrNumber: input.utrNumber ?? null,
+      paymentScreenshot: input.paymentScreenshot ?? null,
       orderStatus: OrderStatus.pending,
       mobileNumber: input.mobileNumber,
       locationDetails: input.locationDetails,

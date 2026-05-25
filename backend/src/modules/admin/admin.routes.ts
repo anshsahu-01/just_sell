@@ -13,4 +13,15 @@ router.patch("/products/:id/restore", authenticate, adminController.restoreProdu
 router.delete("/products/:id", authenticate, adminController.deleteProduct);
 router.get("/orders", authenticate, adminController.getOrders);
 
+router.patch(
+	"/orders/:id/approve",
+	authenticate,
+	adminController.approveOrder
+);
+router.patch(
+	"/orders/:id/reject",
+	authenticate,
+	adminController.rejectOrder
+);
+
 export default router;

@@ -25,6 +25,7 @@ enum PaymentMethod {
 
 enum PaymentStatus {
   payment_pending
+  verification_pending
   confirmed
   cancelled
 }
@@ -148,6 +149,8 @@ model Order {
   amount          Decimal       @db.Decimal(10, 2)
   paymentMethod   PaymentMethod
   paymentStatus   PaymentStatus @default(payment_pending)
+  utrNumber       String?
+  paymentScreenshot String?
   orderStatus     OrderStatus   @default(pending)
   mobileNumber    String?
   locationDetails String        @default("")

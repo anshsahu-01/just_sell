@@ -6,6 +6,8 @@ export const createOrderSchema = z.object({
   paymentMethod: z.nativeEnum(PaymentMethod, {
     message: "Invalid payment method"
   }),
+  utrNumber: z.string().optional(),
+  paymentScreenshot: z.string().optional(),
   mobileNumber: z
     .string()
     .trim()
