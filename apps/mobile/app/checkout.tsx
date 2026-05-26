@@ -17,7 +17,6 @@ import { formatPrice } from "@/utils/format";
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 
@@ -137,29 +136,7 @@ export default function CheckoutScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       const selected = result.assets[0];
-      const originalUri = selected.uri;
-      const originalBlob = await fetch(originalUri).then((r) => r.blob());
-      const originalBytes = originalBlob.size;
-
-      const resizeWidth = selected.width && selected.width > 800 ? 800 : selected.width ?? 800;
-      const manipulated = await ImageManipulator.manipulateAsync(
-        originalUri,
-        [{ resize: { width: resizeWidth } }],
-        { compress: 0.55, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-      );
-
-      const compressedBytes = manipulated.base64
-        ? Math.ceil((manipulated.base64.length * 3) / 4)
-        : await fetch(manipulated.uri).then((r) => r.blob()).then((b) => b.size);
-
-      console.log("Original screenshot size (bytes)", originalBytes);
-      console.log("Compressed screenshot size (bytes)", compressedBytes);
-
-      if (manipulated.base64) {
-        setPaymentScreenshot(`data:image/jpeg;base64,${manipulated.base64}`);
-      } else {
-        setPaymentScreenshot(manipulated.uri);
-      }
+      setPaymentScreenshot(selected.uri);
       if (validationErrors.paymentScreenshot) {
         setValidationErrors((prev) => ({ ...prev, paymentScreenshot: "" }));
       }
